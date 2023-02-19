@@ -1,0 +1,45 @@
+name: Build ISO
+
+on:
+  push:
+    paths-ignore:
+      - "**.md"
+  pull_request:
+    paths-ignore:
+      - "**.md"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    container:
+      image: archlinux:latest
+      options: --privileged
+    steps:
+      - name: Checkout files
+        uses: actions/checkout@v3
+
+      - name: Edit Pacman config
+        uses: sed -i 's/#ParallelDownloads.*/ParallelDownloads = 15/' /etc/pacman.conf
+
+      - name: Init pacman keyring
+        run: |
+          pacman-key --init
+          pacman -Syyu --noconfirm
+
+      - name: Build ArchISO
+        run: |
+          pacman -Syyu archiso --noconfirm
+          time mkarchiso -v .
+      
+      - name: Create release tags
+        run: |
+          echo "filePath=out/$(ls out)" >> $GITHUB_ENV
+          echo "fileName=$(ls out)" >> $GITHUB_ENV
+          echo "fileTag=$(date +%d-%m-%Y-%H-%M)" >> $GITHUB_ENV
+
+      - name: Release ArchISO
+        uses: softprops/action-gh-release@v1
+        with:
+          files: ${{ env.filePath }}
+          name: ${{ env.fileName }}
+          tag_name: ${{ env.fileTag }}
