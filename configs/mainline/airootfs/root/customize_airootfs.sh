@@ -24,8 +24,6 @@ systemctl set-default multi-user.target
 
 useradd -m -G wheel "${USERNAME}"
 
-passwd "${USERNAME}"
-
 su "${USERNAME}"
 
 pacman -Sy
